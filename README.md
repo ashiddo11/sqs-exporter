@@ -22,11 +22,32 @@ Credentials to AWS are provided in the following order:
 
 For more information check [AWS SDK Documentation] (https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html)
 
+### AWS IAM permissions
+The app needs sqs list and read access to the sqs policies
+```{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "sqs:ListQueues",
+                "sqs:GetQueueUrl",
+                "sqs:ListDeadLetterSourceQueues",
+                "sqs:ReceiveMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:ListQueueTags"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
 ## Running
 **You need to specify the region you to connect to**
 Running on an ec2 machine using IAM roles:
 `docker run -e AWS_REGION=<region> -d -p 9434:9434 ashiddo11/sqs-exporter`
 
 Or running it externally:
-```
-docker run -d -p 9384:9384 -e AWS_ACCESS_KEY_ID=<access_key> -e AWS_SECRET_ACCESS_KEY=<secret_key> -e AWS_REGION=<region>  ashiddo11/sqs-exporter```
+```docker run -d -p 9384:9384 -e AWS_ACCESS_KEY_ID=<access_key> -e AWS_SECRET_ACCESS_KEY=<secret_key> -e AWS_REGION=<region>  ashiddo11/sqs-exporter```
