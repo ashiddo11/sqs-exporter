@@ -18,9 +18,9 @@ func (h MetricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
                 msgAvailable := *attr.Attributes["ApproximateNumberOfMessages"]
                 msgDelayed := *attr.Attributes["ApproximateNumberOfMessagesDelayed"]
                 msgNotvisible := *attr.Attributes["ApproximateNumberOfMessagesDelayed"]
-                fmt.Fprintf(w, "sqs_messages_visible{\"queue\":%s} %+v\n", queue, msgAvailable)
-                fmt.Fprintf(w, "sqs_messages_delayed{\"queue\":%s} %+v\n", queue, msgDelayed)
-                fmt.Fprintf(w, "sqs_messages_not_visible{\"queue\":%s} %+v\n", queue, msgNotvisible)
+                fmt.Fprintf(w, "sqs_messages_visible{queue_name=\"%s\"} %+v\n", queue, msgAvailable)
+                fmt.Fprintf(w, "sqs_messages_delayed{queue_name=\"%s\"} %+v\n", queue, msgDelayed)
+                fmt.Fprintf(w, "sqs_messages_not_visible{queue_name=\"%s\"} %+v\n", queue, msgNotvisible)
         }
 }
 
