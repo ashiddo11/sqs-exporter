@@ -17,9 +17,9 @@ func logRequest(handler http.Handler) http.Handler {
     })
 }
 
-
 func main() {
         flag.Parse()
         http.Handle("/metrics", collector.MetricHandler{})
+        log.Println("Starting exporter on", *addr)
         log.Fatal(http.ListenAndServe(*addr, logRequest(http.DefaultServeMux)))
 }
