@@ -14,7 +14,7 @@ For more information check [AWS SQS Documentation](https://docs.aws.amazon.com/A
 ## Configuration
 Credentials to AWS are provided in the following order:
 
-- Environment variables (AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+- Environment variables (AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY)
 
 - Shared credentials file (~/.aws/credentials)
 
