@@ -31,21 +31,19 @@ func getQueueName(url string) (queueName string) {
 }
 
 func getQueues() (queues map[string]*sqs.GetQueueAttributesOutput) {
-        sess := session.Must(session.NewSession(&aws.Config{
-                Region: aws.String("ap-southeast-1")}))
+        sess := session.Must(session.NewSession())
         client := sqs.New(sess)
         result, err := client.ListQueues(nil)
         if err != nil {
-                log.Println("Error", err)
-                return
+                log.Fatal("Error ", err)
         }
 
         queues = make(map[string]*sqs.GetQueueAttributesOutput)
 
+        if result.QueueUrls == nil {
+                log.Println("Couldnt find any queues in region:", *sess.Config.Region)
+        }
         for _, urls := range result.QueueUrls {
-                if urls == nil {
-                        continue
-                }
                 params := &sqs.GetQueueAttributesInput{
                         QueueUrl: aws.String(*urls),
                         AttributeNames: []*string{
