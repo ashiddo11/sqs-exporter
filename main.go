@@ -20,6 +20,15 @@ func logRequest(handler http.Handler) http.Handler {
 func main() {
 	flag.Parse()
 	http.Handle("/metrics", collector.MetricHandler{})
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`
+	        <html>
+	        <head><title>SQS Exporter</title></head>
+	        <body>
+	        <h1>SQS Exporter</h1><p><a href="/metrics">Metrics</a></p>
+	        </body>
+	        </html>`))
+	})
 	log.Println("Starting exporter on", *addr)
 	log.Fatal(http.ListenAndServe(*addr, logRequest(http.DefaultServeMux)))
 }
