@@ -14,13 +14,18 @@ type MetricHandler struct{}
 
 func (h MetricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	queues := getQueues()
+	listQueueTags := getTags()
 	for queue, attr := range queues {
 		msgAvailable := *attr.Attributes["ApproximateNumberOfMessages"]
 		msgDelayed := *attr.Attributes["ApproximateNumberOfMessagesDelayed"]
 		msgNotvisible := *attr.Attributes["ApproximateNumberOfMessagesDelayed"]
-		fmt.Fprintf(w, "sqs_messages_visible{queue_name=\"%s\"} %+v\n", queue, msgAvailable)
-		fmt.Fprintf(w, "sqs_messages_delayed{queue_name=\"%s\"} %+v\n", queue, msgDelayed)
-		fmt.Fprintf(w, "sqs_messages_not_visible{queue_name=\"%s\"} %+v\n", queue, msgNotvisible)
+		tags := ""
+		for key, value := range listQueueTags[queue].Tags {
+			tags += "," + key + "=\"" + *value + "\""
+		}
+		fmt.Fprintf(w, "sqs_messages_visible{queue_name=\"%s\"%s} %+v\n", queue, tags, msgAvailable)
+		fmt.Fprintf(w, "sqs_messages_delayed{queue_name=\"%s\"%s} %+v\n", queue, tags, msgDelayed)
+		fmt.Fprintf(w, "sqs_messages_not_visible{queue_name=\"%s\"%s} %+v\n", queue, tags, msgNotvisible)
 	}
 }
 
@@ -28,6 +33,31 @@ func getQueueName(url string) (queueName string) {
 	queue := strings.Split(url, "/")
 	queueName = queue[len(queue)-1]
 	return
+}
+
+func getTags() (tags map[string]*sqs.ListQueueTagsOutput) {
+	sess := session.Must(session.NewSession())
+	client := sqs.New(sess)
+	result, err := client.ListQueues(nil)
+	if err != nil {
+		log.Fatal("Error ", err)
+	}
+
+	tags = make(map[string]*sqs.ListQueueTagsOutput)
+
+	if result.QueueUrls == nil {
+		log.Println("Couldnt find any queues in region:", *sess.Config.Region)
+	}
+	for _, urls := range result.QueueUrls {
+		params := &sqs.ListQueueTagsInput{
+			QueueUrl: aws.String(*urls),
+		}
+
+		resp, _ := client.ListQueueTags(params)
+		queueName := getQueueName(*urls)
+		tags[queueName] = resp
+	}
+	return tags
 }
 
 func getQueues() (queues map[string]*sqs.GetQueueAttributesOutput) {
