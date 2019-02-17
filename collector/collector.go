@@ -13,14 +13,18 @@ import (
 type MetricHandler struct{}
 
 func (h MetricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	queues := getQueues()
+	queues,listQueueTags := getQueues()
 	for queue, attr := range queues {
 		msgAvailable := *attr.Attributes["ApproximateNumberOfMessages"]
 		msgDelayed := *attr.Attributes["ApproximateNumberOfMessagesDelayed"]
-		msgNotvisible := *attr.Attributes["ApproximateNumberOfMessagesDelayed"]
-		fmt.Fprintf(w, "sqs_messages_visible{queue_name=\"%s\"} %+v\n", queue, msgAvailable)
-		fmt.Fprintf(w, "sqs_messages_delayed{queue_name=\"%s\"} %+v\n", queue, msgDelayed)
-		fmt.Fprintf(w, "sqs_messages_not_visible{queue_name=\"%s\"} %+v\n", queue, msgNotvisible)
+		msgNotvisible := *attr.Attributes["ApproximateNumberOfMessagesNotVisible"]
+		tags := ""
+		for key, value := range listQueueTags[queue].Tags {
+			tags += "," + key + "=\"" + *value + "\""
+		}
+		fmt.Fprintf(w, "sqs_messages_visible{queue_name=\"%s\"%s} %+v\n", queue, tags, msgAvailable)
+		fmt.Fprintf(w, "sqs_messages_delayed{queue_name=\"%s\"%s} %+v\n", queue, tags, msgDelayed)
+		fmt.Fprintf(w, "sqs_messages_not_visible{queue_name=\"%s\"%s} %+v\n", queue, tags, msgNotvisible)
 	}
 }
 
@@ -30,7 +34,7 @@ func getQueueName(url string) (queueName string) {
 	return
 }
 
-func getQueues() (queues map[string]*sqs.GetQueueAttributesOutput) {
+func getQueues() (queues map[string]*sqs.GetQueueAttributesOutput, tags map[string]*sqs.ListQueueTagsOutput) {
 	sess := session.Must(session.NewSession())
 	client := sqs.New(sess)
 	result, err := client.ListQueues(nil)
@@ -39,6 +43,7 @@ func getQueues() (queues map[string]*sqs.GetQueueAttributesOutput) {
 	}
 
 	queues = make(map[string]*sqs.GetQueueAttributesOutput)
+	tags = make(map[string]*sqs.ListQueueTagsOutput)
 
 	if result.QueueUrls == nil {
 		log.Println("Couldnt find any queues in region:", *sess.Config.Region)
@@ -53,9 +58,15 @@ func getQueues() (queues map[string]*sqs.GetQueueAttributesOutput) {
 			},
 		}
 
+		tagsParams := &sqs.ListQueueTagsInput{
+			QueueUrl: aws.String(*urls),
+		}
+
 		resp, _ := client.GetQueueAttributes(params)
+		tagsResp, _ := client.ListQueueTags(tagsParams)
 		queueName := getQueueName(*urls)
 		queues[queueName] = resp
+		tags[queueName] = tagsResp
 	}
-	return queues
+	return queues,tags
 }
