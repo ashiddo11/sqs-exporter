@@ -2,18 +2,19 @@ package collector
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sqs"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sqs"
 )
 
 type MetricHandler struct{}
 
 func (h MetricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	queues,listQueueTags := getQueues()
+	queues, listQueueTags := getQueues()
 	for queue, attr := range queues {
 		msgAvailable := *attr.Attributes["ApproximateNumberOfMessages"]
 		msgDelayed := *attr.Attributes["ApproximateNumberOfMessagesDelayed"]
@@ -62,11 +63,13 @@ func getQueues() (queues map[string]*sqs.GetQueueAttributesOutput, tags map[stri
 			QueueUrl: aws.String(*urls),
 		}
 
-		resp, _ := client.GetQueueAttributes(params)
-		tagsResp, _ := client.ListQueueTags(tagsParams)
 		queueName := getQueueName(*urls)
-		queues[queueName] = resp
-		tags[queueName] = tagsResp
+		resp, _ := client.GetQueueAttributes(params)
+		tagsResp, err := client.ListQueueTags(tagsParams)
+		if err == nil {
+			queues[queueName] = resp
+			tags[queueName] = tagsResp
+		}
 	}
-	return queues,tags
+	return queues, tags
 }
