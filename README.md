@@ -49,9 +49,16 @@ The app needs sqs list and read access to the sqs policies
 
 ## Running
 
-**You need to specify the region you to connect to**
-Running on an ec2 machine using IAM roles:
-`docker run -e AWS_REGION=<region> -d -p 9434:9434 ashiddo11/sqs-exporter`
+To run the SQS exporter on Docker, you need to specify the region to connect to.
 
-Or running it externally:
-`docker run -d -p 9384:9384 -e AWS_ACCESS_KEY_ID=<access_key> -e AWS_SECRET_ACCESS_KEY=<secret_key> -e AWS_REGION=<region>  ashiddo11/sqs-exporter`
+When running on an ec2 machine using IAM role:
+
+```
+$ docker run -e AWS_REGION=<region> -d -p 9434:9434 ashiddo11/sqs-exporter
+```
+
+When running it externally:
+
+```
+$ docker run -d -p 9434:9434 -e AWS_ACCESS_KEY_ID=<access_key> -e AWS_SECRET_ACCESS_KEY=<secret_key> -e AWS_REGION=<region>  ashiddo11/sqs-exporter
+```
