@@ -17,12 +17,13 @@ func logRequest(handler http.Handler) http.Handler {
 
 func main() {
 	var (
-		listenAddress = flag.String("web.listen-address", ":9434", "Address to listen on for web interface and telemetry.")
-		metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
+		listenAddress   = flag.String("web.listen-address", ":9434", "Address to listen on for web interface and telemetry.")
+		metricsPath     = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
+		queueNamePrefix = flag.String("queue-name-prefix", "", "Optional: Filter for queues named with the given prefix.")
 	)
 	flag.Parse()
 
-	http.Handle(*metricsPath, collector.MetricHandler{})
+	http.Handle(*metricsPath, collector.MetricHandler{QueueNamePrefix: *queueNamePrefix})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`
 	        <html>
