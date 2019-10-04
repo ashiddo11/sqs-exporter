@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -23,8 +22,6 @@ func main() {
 		queueMatcherRe   = flag.String("sqs.queue-filter", "(.*)", "Regex filter for sqs queue name")
 	)
 	flag.Parse()
-
-	fmt.Println(*queueMatcherRe)
 
 	http.Handle(*metricsPath, collector.MetricHandler{
 		Opts: &collector.Options{QueueMatcher: *queueMatcherRe},
