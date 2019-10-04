@@ -7,13 +7,16 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
-type MetricHandler struct{}
+type MetricHandler struct{
+	Opts *Options
+}
 
 func (h MetricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	queues,listQueueTags := getQueues()
+	queues,listQueueTags := h.getQueues()
 	for queue, attr := range queues {
 		msgAvailable := *attr.Attributes["ApproximateNumberOfMessages"]
 		msgDelayed := *attr.Attributes["ApproximateNumberOfMessagesDelayed"]
@@ -28,13 +31,18 @@ func (h MetricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h MetricHandler) queueAllowed(queueName string) bool {
+	rx := regexp.MustCompile(h.Opts.QueueMatcher)
+	return rx.MatchString(queueName)
+}
+
 func getQueueName(url string) (queueName string) {
 	queue := strings.Split(url, "/")
 	queueName = queue[len(queue)-1]
 	return
 }
 
-func getQueues() (queues map[string]*sqs.GetQueueAttributesOutput, tags map[string]*sqs.ListQueueTagsOutput) {
+func (h MetricHandler) getQueues() (queues map[string]*sqs.GetQueueAttributesOutput, tags map[string]*sqs.ListQueueTagsOutput) {
 	sess := session.Must(session.NewSession())
 	client := sqs.New(sess)
 	result, err := client.ListQueues(nil)
@@ -49,6 +57,13 @@ func getQueues() (queues map[string]*sqs.GetQueueAttributesOutput, tags map[stri
 		log.Println("Couldnt find any queues in region:", *sess.Config.Region)
 	}
 	for _, urls := range result.QueueUrls {
+
+		queueName := getQueueName(*urls)
+
+		if !h.queueAllowed(queueName){
+			continue
+		}
+
 		params := &sqs.GetQueueAttributesInput{
 			QueueUrl: aws.String(*urls),
 			AttributeNames: []*string{
@@ -64,7 +79,7 @@ func getQueues() (queues map[string]*sqs.GetQueueAttributesOutput, tags map[stri
 
 		resp, _ := client.GetQueueAttributes(params)
 		tagsResp, _ := client.ListQueueTags(tagsParams)
-		queueName := getQueueName(*urls)
+
 		queues[queueName] = resp
 		tags[queueName] = tagsResp
 	}

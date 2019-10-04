@@ -19,10 +19,13 @@ func main() {
 	var (
 		listenAddress = flag.String("web.listen-address", ":9434", "Address to listen on for web interface and telemetry.")
 		metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
+		queueMatcherRe   = flag.String("sqs.queue-filter", "(.*)", "Regex filter for sqs queue name")
 	)
 	flag.Parse()
 
-	http.Handle(*metricsPath, collector.MetricHandler{})
+	http.Handle(*metricsPath, collector.MetricHandler{
+		Opts: &collector.Options{QueueMatcher: *queueMatcherRe},
+	})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`
 	        <html>
